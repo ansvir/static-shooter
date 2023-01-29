@@ -12,7 +12,6 @@ public class DesktopLauncher {
 		Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
 		config.setForegroundFPS(60);
 		config.setWindowedMode(640, 480);
-		config.setResizable(false);
 		config.setTitle("StaticShooter");
 		new Lwjgl3Application(new StaticShooter(), config);
 	}
