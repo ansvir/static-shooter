@@ -9,6 +9,9 @@ import org.itique.ss.util.TextureUtil;
 
 public class HeroActor extends Actor implements Disposable {
 
+    private static final int VISIBLE_AREA = 480;
+    private static final int FULL_ANGLE = VISIBLE_AREA * 4;
+
     private float health;
     private int bullets;
     private Texture heroTexture;
@@ -16,8 +19,9 @@ public class HeroActor extends Actor implements Disposable {
     private Texture currentGun;
     private int xPos;
     private int yPos;
+    private int cameraPos;
 
-    public HeroActor(int xPos, int yPos) {
+    public HeroActor(int xPos, int yPos, int cameraPos) {
         this.health = 100.0f;
         this.bullets = 30 * 6;
         heroHands = new Texture("hands1.png");
@@ -30,6 +34,7 @@ public class HeroActor extends Actor implements Disposable {
         setZIndex(2);
         this.xPos = xPos;
         this.yPos = yPos;
+        this.cameraPos = cameraPos;
     }
 
     @Override
@@ -75,6 +80,19 @@ public class HeroActor extends Actor implements Disposable {
 
     public void setYPos(int y) {
         this.yPos = y;
+    }
+
+    public int getCameraPos() {
+        return cameraPos;
+    }
+
+    public void setCameraPos(int cameraPos) {
+        if (cameraPos > FULL_ANGLE) {
+            float rotations = (float) cameraPos / FULL_ANGLE;
+            this.cameraPos = (int) (((float) cameraPos) * (rotations - 1));
+        } else {
+            this.cameraPos = cameraPos;
+        }
     }
 
     @Override

@@ -2,8 +2,10 @@ package org.itique.ss.screen;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
@@ -16,28 +18,35 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FillViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import org.itique.ss.actor.EnemyAction;
 import org.itique.ss.actor.EnemyActor;
 import org.itique.ss.actor.EnemyStatus;
 import org.itique.ss.actor.HeroActor;
 import org.itique.ss.map.Cell;
 import org.itique.ss.map.DefaultMap;
+import org.itique.ss.map.object.EnemyObject;
 
+import java.util.Arrays;
 import java.util.Random;
 
 public class GameScreen implements Screen {
+
+    private static final int ENEMY_WIDTH = 56;
+    private static final int ENEMY_HEIGHT = 128;
+    private static final int VISIBLE_ANGLE = 480;
 
     private Stage stage;
     private Viewport viewport;
     private OrthographicCamera camera;
     private SpriteBatch batch;
     private Texture background;
-    private int xRange;
-    private int yRange;
+    private float yRange;
     private Game game;
     private long previousSpawn;
     private Music backgroundMusic;
     private HeroActor hero;
     private Cell[][] tiledMap;
+    private Sound shootSoundTwo;
 
     public GameScreen(Game game) {
         this.game = game;
@@ -49,18 +58,27 @@ public class GameScreen implements Screen {
         this.backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal("war_background.mp3"));
         this.backgroundMusic.setLooping(true);
         this.backgroundMusic.play();
+        shootSoundTwo = Gdx.audio.newSound(Gdx.files.internal("shoot2.mp3"));
         previousSpawn = System.currentTimeMillis();
         camera = new OrthographicCamera();
         viewport = new FillViewport(640, 480, camera);
         batch = new SpriteBatch();
         stage = new Stage(viewport, batch);
-        xRange = stage.getViewport().getScreenWidth();
-        yRange = stage.getViewport().getScreenHeight() / 3;
+        yRange = stage.getViewport().getScreenHeight() / 2.6f;
         background = new Texture("field.png");
         tiledMap = DefaultMap.getMap();
-        hero = new HeroActor(tiledMap.length / 2, tiledMap[0].length / 2);
+        hero = new HeroActor(tiledMap.length / 2, tiledMap[0].length / 2, 0);
         this.stage.addActor(hero);
         this.stage.addActor(spawnEnemy());
+        this.stage.addListener(new ClickListener() {
+            @Override
+            public boolean touchDown(InputEvent event, float x, float y, int pointer, int button) {
+                if (button == Input.Buttons.LEFT) {
+                    shootSoundTwo.play();
+                }
+                return true;
+            }
+        });
     }
 
     @Override
@@ -104,7 +122,11 @@ public class GameScreen implements Screen {
     public void dispose() {
         batch.dispose();
         background.dispose();
-        stage.getActors().forEach(a -> { if (a instanceof EnemyActor) { ((EnemyActor) a).dispose(); }});
+        stage.getActors().forEach(a -> {
+            if (a instanceof EnemyActor) {
+                ((EnemyActor) a).dispose();
+            }
+        });
         stage.dispose();
         backgroundMusic.dispose();
         hero.dispose();
@@ -112,53 +134,77 @@ public class GameScreen implements Screen {
 
     private EnemyActor spawnEnemy() {
         Random random = new Random();
-        return new EnemyActor(random.nextInt(xRange) + 10,
+        EnemyActor actor = new EnemyActor(random.nextInt(VISIBLE_ANGLE - 10) + 10,
                 yRange, 200.0f);
+        int xSpawn = random.nextInt(tiledMap.length);
+        int ySpawn = random.nextInt(tiledMap[0].length);
+        Arrays.stream(tiledMap).forEach(c -> Arrays.stream(c).forEach(c2 -> {
+            if (c2.getX() == xSpawn && c2.getY() == ySpawn) {
+                EnemyObject enemy = new EnemyObject(xSpawn, ySpawn, (int) actor.getX());
+                c2.setObject(enemy);
+            }
+        }));
+        return actor;
     }
 
     private void updateMotion(float delta) {
-        if (System.currentTimeMillis() - previousSpawn >= 6000L) {
+        long time = System.currentTimeMillis();
+        if (time - previousSpawn >= 6000L) {
             previousSpawn = System.currentTimeMillis();
             EnemyActor enemyActor = spawnEnemy();
-            enemyActor.walk(delta);
-            enemyActor.setTimeline(System.currentTimeMillis());
+            enemyActor.setTimeline(time);
             stage.addActor(enemyActor);
         }
         Array<Actor> actorsToRemove = new Array<>();
         stage.getActors().forEach(a -> {
             if (a instanceof EnemyActor) {
-                long time = System.currentTimeMillis();
-                if (time - ((EnemyActor) a).getTimeline() >= 1000L
-                        && time - ((EnemyActor) a).getTimeline() <= 4000L) {
-                    ((EnemyActor) a).stop(delta);
-                    ((EnemyActor) a).shoot(delta);
+                ((EnemyActor) a).setStateTime(((EnemyActor) a).getStateTime() + delta);
+                if (((EnemyActor) a).getStatus() != EnemyStatus.DEAD) {
                     Random random = new Random();
-                    int probability = random.nextInt(100);
-                    if (probability >= 50) {
-                        this.hero.setHealth(this.hero.getHealth() - 1.0f);
+                    long actionTime = random.nextInt(3000) + 2000L;
+                    if (time - ((EnemyActor) a).getTimeline() <= actionTime
+                    && ((EnemyActor) a).getAction() == EnemyAction.WAITING) {
+                        ((EnemyActor) a).walk();
+                    } else if (time - ((EnemyActor) a).getTimeline() > actionTime
+                    && ((EnemyActor) a).getAction() == EnemyAction.WALKING) {
+                        ((EnemyActor) a).shoot();
+                        int probability = random.nextInt(101);
+                        if (probability >= 50) {
+                            this.hero.setHealth(this.hero.getHealth() - 1.0f);
+                        }
+                    } else if (time - ((EnemyActor) a).getTimeline() >= actionTime + 2000L
+                    && ((EnemyActor) a).getAction() == EnemyAction.SHOOTING) {
+                        ((EnemyActor) a).stop();
+                    } else if (time - ((EnemyActor) a).getTimeline() > actionTime + 500L
+                    && ((EnemyActor) a).getAction() == EnemyAction.WAITING) {
+                        ((EnemyActor) a).setTimeline(time);
                     }
-                } else {
-                    ((EnemyActor) a).setTimeline(time);
-                    if (((EnemyActor) a).getStatus() != EnemyStatus.DEAD) {
-                        ((EnemyActor) a).walk(delta);
-                    }
+                    a.addListener(new ClickListener() {
+                        @Override
+                        public void clicked(InputEvent event, float x, float y) {
+                            ((EnemyActor) a).hurt();
+                        }
+                    });
                 }
-                a.addListener(new ClickListener() {
-                    @Override
-                    public void clicked(InputEvent event, float x, float y) {
-                        ((EnemyActor) a).heart(delta);
-                    }
-                });
             }
         });
         stage.getActors().forEach(a -> {
-            if (a instanceof EnemyActor && ((EnemyActor) a).getStatus() == EnemyStatus.DEAD) {
-                ((EnemyActor) a).down(delta);
-                if (((EnemyActor) a).invalidate(delta)) {
-                    actorsToRemove.add(a);
+            if (a instanceof EnemyActor) {
+                if (((EnemyActor) a).getStatus() == EnemyStatus.DEAD) {
+                    ((EnemyActor) a).down();
+                    if (((EnemyActor) a).invalidate()) {
+                        actorsToRemove.add(a);
+                        ((EnemyActor) a).dispose();
+                    }
+                } else if (((EnemyActor) a).getStatus() == EnemyStatus.RUN) {
+                    if (((EnemyActor) a).invalidate()) {
+                        actorsToRemove.add(a);
+                        ((EnemyActor) a).dispose();
+                    }
                 }
             }
         });
         stage.getActors().removeAll(actorsToRemove, true);
     }
+
 }
