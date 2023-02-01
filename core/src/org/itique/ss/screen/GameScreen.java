@@ -10,9 +10,14 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Container;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -47,6 +52,10 @@ public class GameScreen implements Screen {
     private HeroActor hero;
     private Cell[][] tiledMap;
     private Sound shootSoundTwo;
+    private Skin skin;
+    private TextureAtlas atlas;
+    private Container<Table> mainContainer;
+    private Label killedEnemiesLabel;
 
     public GameScreen(Game game) {
         this.game = game;
@@ -63,6 +72,8 @@ public class GameScreen implements Screen {
         camera = new OrthographicCamera();
         viewport = new FillViewport(640, 480, camera);
         batch = new SpriteBatch();
+        atlas = new TextureAtlas("skins/default/default.atlas");
+        skin = new Skin(Gdx.files.internal("skins/default/default.json"), atlas);
         stage = new Stage(viewport, batch);
         yRange = stage.getViewport().getScreenHeight() / 2.6f;
         background = new Texture("field.png");
@@ -79,6 +90,11 @@ public class GameScreen implements Screen {
                 return true;
             }
         });
+        killedEnemiesLabel = new Label("0", skin);
+        Table table = new Table();
+        table.add(killedEnemiesLabel).top().left().pad(20);
+        mainContainer = new Container<>(table);
+        stage.addActor(mainContainer);
     }
 
     @Override
@@ -130,6 +146,8 @@ public class GameScreen implements Screen {
         stage.dispose();
         backgroundMusic.dispose();
         hero.dispose();
+        skin.dispose();
+        atlas.dispose();
     }
 
     private EnemyActor spawnEnemy() {
@@ -192,6 +210,7 @@ public class GameScreen implements Screen {
             if (a instanceof EnemyActor) {
                 if (((EnemyActor) a).getStatus() == EnemyStatus.DEAD) {
                     ((EnemyActor) a).down();
+                    this.killedEnemiesLabel.setText(Integer.parseInt(this.killedEnemiesLabel.getText().toString()) + 1);
                     if (((EnemyActor) a).invalidate()) {
                         actorsToRemove.add(a);
                         ((EnemyActor) a).dispose();

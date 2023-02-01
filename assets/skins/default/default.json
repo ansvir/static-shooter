@@ -115,7 +115,7 @@ com.badlogic.gdx.scenes.scene2d.ui.ImageButton$ImageButtonStyle: {
 }
 com.badlogic.gdx.scenes.scene2d.ui.ImageTextButton$ImageTextButtonStyle: {
 	default: {
-		font: EDITIA__
+		font: font
 		up: round-gray
 		down: round-dark-gray
 		over: round-light-gray
@@ -132,7 +132,7 @@ com.badlogic.gdx.scenes.scene2d.ui.ImageTextButton$ImageTextButtonStyle: {
 }
 com.badlogic.gdx.scenes.scene2d.ui.Label$LabelStyle: {
 	default: {
-		font: EDITIA__
+		font: font
 		fontColor: black
 	}
 	title: {
@@ -142,7 +142,7 @@ com.badlogic.gdx.scenes.scene2d.ui.Label$LabelStyle: {
 }
 com.badlogic.gdx.scenes.scene2d.ui.List$ListStyle: {
 	default: {
-		font: EDITIA__
+		font: font
 		fontColorSelected: white
 		fontColorUnselected: black
 		selection: selection
@@ -169,7 +169,7 @@ com.badlogic.gdx.scenes.scene2d.ui.ScrollPane$ScrollPaneStyle: {
 }
 com.badlogic.gdx.scenes.scene2d.ui.SelectBox$SelectBoxStyle: {
 	default: {
-		font: EDITIA__
+		font: font
 		fontColor: black
 		scrollStyle: default
 		listStyle: default
@@ -195,7 +195,7 @@ com.badlogic.gdx.scenes.scene2d.ui.SplitPane$SplitPaneStyle: {
 }
 com.badlogic.gdx.scenes.scene2d.ui.TextButton$TextButtonStyle: {
 	default: {
-		font: EDITIA__
+		font: font
 		fontColor: black
 		up: round-gray
 		down: round-dark-gray
@@ -220,7 +220,7 @@ com.badlogic.gdx.scenes.scene2d.ui.TextButton$TextButtonStyle: {
 }
 com.badlogic.gdx.scenes.scene2d.ui.TextField$TextFieldStyle: {
 	default: {
-		font: EDITIA__
+		font: font
 		fontColor: black
 		background: textfield
 		cursor: cursor
@@ -248,7 +248,7 @@ com.badlogic.gdx.scenes.scene2d.ui.Tree$TreeStyle: {
 com.badlogic.gdx.scenes.scene2d.ui.Window$WindowStyle: {
 	default: {
 		background: window
-		titleFont: EDITIA__
+		titleFont: font
 		titleFontColor: black
 	}
 	dialog: {
